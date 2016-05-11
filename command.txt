@@ -1,17 +1,32 @@
 npm install webpack -g
 npm install webpack --save-dev
-npm install css-loader style-loader --save-dev
 
-webpack
+npm install react --save-dev
+npm install react-dom --save-dev
+npm install babel-preset-react --save-dev
+npm install babel-core --save-dev
+npm install babel-loader --save-dev
 
-A prettier output£º
-webpack --progress --colors
 
-Watch mode£º
-webpack --progress --colors --watch
+echo { "presets": ["react"] } > .babelrc
 
-Development server:
-npm install webpack-dev-server --save-dev
-webpack-dev-server --progress --colors
-http://localhost:8080/webpack-dev-server/bundle 
+or in package.json
+  "babel": {
+	"presets": ["react"]
+  }
 
+  
+  webpack.config.js
+module.exports = {
+    entry: "./main.js",
+    output: {
+        path: __dirname,
+        filename: "bundle.js"
+    },
+    module: {
+        loaders: [
+			
+            {test: /\.js$/, loader: "babel"}
+        ]
+    }
+};
