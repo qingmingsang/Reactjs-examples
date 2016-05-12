@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<style>
+			.my-list {
+				color: lightblue;
+			}
+		</style>
+		<script src="../../build/react.min.js"></script>
+		<script src="../../build/react-dom.min.js"></script>
+		<script src="../../build/browser.min.js"></script>
+	</head>
+
+	<body>
+		<div id="example"></div>
+		<script type="text/babel">
+			
+			var HelloWorld = React.createClass({
+			  render: function() {
+			    return (
+			      <p className="my-list"> 
+			        Hello, <input type="text"  placeholder="Your name here" />!
+			        It is {this.props.date.toTimeString()}
+			      </p>
+			    );
+			  }
+			});
+			
+			setInterval(function() {
+			  ReactDOM.render(
+			    <HelloWorld date={new Date()} />,
+			    document.getElementById('example')
+			  );
+			}, 500);
+
+
+		</script>
+	</body>
+
+</html>

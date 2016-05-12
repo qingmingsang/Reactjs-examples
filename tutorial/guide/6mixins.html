@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+
+  </head>
+  <body>
+  	<div id="example"></div>
+		<script src="../../build/react.min.js"></script>
+		<script src="../../build/react-dom.min.js"></script>
+		<script src="../../build/browser.min.js"></script>
+    <script type="text/babel">
+			var SetIntervalMixin = {
+			  componentWillMount: function() {
+			    this.intervals = [];
+			  },
+			  setInterval: function() {
+			    this.intervals.push(setInterval.apply(null, arguments));
+			  },
+			  componentWillUnmount: function() {
+			    this.intervals.forEach(clearInterval);
+			  }
+			};
+			
+			var TickTock = React.createClass({
+			  mixins: [SetIntervalMixin], // Use the mixin
+			  getInitialState: function() {
+			    return {seconds: 0};
+			  },
+			  componentDidMount: function() {
+			    this.setInterval(this.tick, 1000); // Call a method on the mixin
+			  },
+			  tick: function() {
+			    this.setState({seconds: this.state.seconds + 1});
+			  },
+			  render: function() {
+			    return (
+			      <p>
+			        React has been running for {this.state.seconds} seconds.
+			      </p>
+			    );
+			  }
+			});
+			
+			ReactDOM.render(
+			  <TickTock />,
+			  document.getElementById('example')
+			);
+    </script>
+  </body>
+</html>
