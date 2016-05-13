@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+
+  </head>
+  <body>
+  	<div id="example"></div>
+		<script src="../../build/react.min.js"></script>
+		<script src="../../build/react-dom.min.js"></script>
+		<script src="../../build/browser.min.js"></script>
+    <script type="text/babel">
+									    	
+		  var App = React.createClass({
+		    getInitialState: function() {
+		      return {userInput: ''};
+		    },
+		    handleChange: function(e) {
+		      this.setState({userInput: e.target.value});
+		    },
+		    clearAndFocusInput: function() {
+		      this.setState({userInput: ''}); // Clear the input
+		      // We wish to focus the <input /> now!
+		    },
+		    render: function() {
+		      return (
+		        <div>
+		          <div onClick={this.clearAndFocusInput}>
+		            Click to Focus and Reset
+		          </div>
+		          <input
+		            value={this.state.userInput}
+		            onChange={this.handleChange}
+		          />
+		        </div>
+		      );
+		    }
+		  });
+			
+			ReactDOM.render(
+			  <App/>,
+			  document.getElementById('example')
+			);
+
+
+    </script>
+  </body>
+</html>

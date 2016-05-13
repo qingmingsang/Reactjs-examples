@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+
+  </head>
+  <body>
+  	<div id="example"></div>
+		<script src="../../build/react.min.js"></script>
+		<script src="../../build/react-dom.min.js"></script>
+		<script src="../../build/browser.min.js"></script>
+    <script type="text/babel">
+			    	
+			function FancyCheckbox(props) {
+			  var fancyClass = props.checked ? 'FancyChecked' : 'FancyUnchecked';
+			  return (
+			    <div className={fancyClass} onClick={props.onClick}>
+			      {props.children}
+			    </div>
+			  );
+			}
+			ReactDOM.render(
+			  <FancyCheckbox checked={true} onClick={console.log.bind(console)}>
+			    Hello world!
+			  </FancyCheckbox>,
+			  document.getElementById('example')
+			);
+
+    </script>
+  </body>
+</html>
