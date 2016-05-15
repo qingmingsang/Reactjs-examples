@@ -21,3 +21,4 @@
 [0511/112841:ERROR:proxy_service_factory.cc(105)] Cannot use V8 Proxy resolver in single process mode.
 [0511/112845:ERROR:proxy_service_factory.cc(105)] Cannot use V8 Proxy resolver in single process mode.
 [0511/114419:ERROR:proxy_service_factory.cc(105)] Cannot use V8 Proxy resolver in single process mode.
+[0515/222812:ERROR:proxy_service_factory.cc(105)] Cannot use V8 Proxy resolver in single process mode.
