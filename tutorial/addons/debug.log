@@ -15,3 +15,10 @@
 [0515/223345:ERROR:proxy_service_factory.cc(105)] Cannot use V8 Proxy resolver in single process mode.
 [0515/223520:ERROR:proxy_service_factory.cc(105)] Cannot use V8 Proxy resolver in single process mode.
 [0515/223729:ERROR:proxy_service_factory.cc(105)] Cannot use V8 Proxy resolver in single process mode.
+[0516/112134:ERROR:proxy_service_factory.cc(105)] Cannot use V8 Proxy resolver in single process mode.
+[0516/112326:ERROR:proxy_service_factory.cc(105)] Cannot use V8 Proxy resolver in single process mode.
+[0516/112417:ERROR:proxy_service_factory.cc(105)] Cannot use V8 Proxy resolver in single process mode.
+[0516/113743:ERROR:proxy_service_factory.cc(105)] Cannot use V8 Proxy resolver in single process mode.
+[0516/113827:ERROR:proxy_service_factory.cc(105)] Cannot use V8 Proxy resolver in single process mode.
+[0516/114104:ERROR:proxy_service_factory.cc(105)] Cannot use V8 Proxy resolver in single process mode.
+[0516/114138:ERROR:proxy_service_factory.cc(105)] Cannot use V8 Proxy resolver in single process mode.

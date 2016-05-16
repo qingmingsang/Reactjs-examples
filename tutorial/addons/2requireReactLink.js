@@ -3,23 +3,18 @@ var React = require('react');
 var ReactDOM = require('react-dom');
 var LinkedStateMixin = require('react-addons-linked-state-mixin');
 
-var WithoutLink = React.createClass({
+var WithLink = React.createClass({
   mixins: [LinkedStateMixin],
   getInitialState: function() {
     return {message: 'Hello!'};
   },
   render: function() {
-    var valueLink = this.linkState('message');
-    var handleChange = function(e) {
-      valueLink.requestChange(e.target.value);
-    };
-    return <input type="text" value={valueLink.value} onChange={handleChange} />;
+    return <input type="text" valueLink={this.linkState('message')} />;
   }
 });
 
 
-
 ReactDOM.render(
-  <WithoutLink />,
+  <WithLink />,
   document.getElementById('example')
 );
