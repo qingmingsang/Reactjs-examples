@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title></title>
+    <script src="../build/react.min.js"></script>
+    <script src="../build/react-dom.min.js"></script>
+    <script src="../build/browser.min.js"></script>
+  </head>
+  <body>
+    <div id="container"></div>
+	
+	<script type="text/babel">
+		/**
+		Todo Model:
+		allTodos:[
+		    {
+		        id: 1,
+		        text: "吃饭",
+		        complete: false
+		    }
+		]
+		Filter:
+		
+		var SHOW_ALL = 'show_all';
+		var SHOW_COMPLETED = 'show_completed';
+		var SHOW_ACTIVE = 'show_active';
+		
+		*/
+		
+		var state = {
+		    allTodos: [],
+		    areAllComplete: true, // 用来简单判断是否所有项目都已经完成，显然这里是可以二次计算的，为了方便传递，避免内部Component多次计算，统一计算后传递...
+		    selectedFilter: SHOW_ALL
+		};			    
+
+	</script>	
+
+  </body>
+</html>

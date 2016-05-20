@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title></title>
+    <script src="../build/react.min.js"></script>
+    <script src="../build/react-dom.min.js"></script>
+    <script src="../build/browser.min.js"></script>
+  </head>
+  <body>
+    <div id="container"></div>
+	
+	<script type="text/babel">
+		
+		  var Header = React.createClass({
+		    getInitialState :function() {
+		        return {
+		            now: new Date()
+		        };
+		    },
+		
+		    render: function() {
+		        var that = this;
+		        setTimeout(function(){
+		            that.setState({now: new Date()});
+		        }, 1000);
+		        return (
+			        				<div>
+			                    <h1>{this.props.title}</h1>
+			                    <h2>{'And now is ' + this.state.now}</h2>
+			               	</div>
+		               );
+		    }
+			});
+		
+			ReactDOM.render(
+				<Header title="I am a head component."/> ,
+			  document.getElementById('container')
+			);
+	</script>	
+
+  </body>
+</html>
