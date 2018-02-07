@@ -69,6 +69,27 @@ Flux的架构下，应用的状态被放在了store中，React组件中只是扮
 缺点：1.Store之间依赖 2.难以进行服务端渲染(因为Dispatcher和Store都是全局唯一的一个) 3. Sotre混杂了逻辑和状态
 
 ## Redux
+1.唯一数据源：
+不像Flux，redux的数据源只存在一个唯一的store上。
+
+2.保持状态只读：
+不能直接去修改状态。要修改store的状态，必须通过派发一个action对象来完成，这点和Flux一致。
+UI=redner(data)
+
+3.数据改变只能通过纯函数完成
+这里的纯函数也就是reducer，redux的red也就是reducer。(reducer+flux)。
+reducer(state,action)
+第一个参数state为当前的状态，
+第二个参数action是接收到的action对象，
+reducer做的就是根据action和state返回一个新的对象，
+reducer是一个纯函数，无副作用的，不能修改action和state。
+reducer只负责计算状态，不负责存储状态。
+
+
+
+
+
+
 
 
 
