@@ -19,6 +19,15 @@ class Counter extends Component {
     );
   }
 }
+function Counter({caption, onIncrement, onDecrement, value}){
+    return (
+      <div>
+        <button style={buttonStyle} onClick={onIncrement}>+</button>
+        <button style={buttonStyle} onClick={onDecrement}>-</button>
+        <span>{caption} count: {value}</span>
+      </div>
+    );
+}
 
 Counter.propTypes = {
   caption: PropTypes.string.isRequired,
