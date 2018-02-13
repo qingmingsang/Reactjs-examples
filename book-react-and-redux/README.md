@@ -229,6 +229,396 @@ const mapDispatchToProps = {
 };
 ```
 
+state 与 redux 里props的界限？
+是否所有状态都需要传入store中，如每次input变化的值？
+
+要使用chrome React Perf插件，需要在Store加入这段代码：
+```
+import Perf from 'react-addons-perf'
+
+const win = window;
+win.Perf = Perf
+```
+
+开发环境可以使用redux-immutable-state-invariant提醒防止误改state。
+在Store加入这段代码：
+```
+const middlewares = [];
+if (process.env.NODE_ENV !== 'production') {
+  middlewares.push(require('redux-immutable-state-invariant')());
+}
+const storeEnhancers = compose(
+  applyMiddleware(...middlewares),
+  (win && win.devToolsExtension) ? win.devToolsExtension() : (f) => f,
+);
+
+export default createStore(reducer, {}, storeEnhancers);
+//export default createStore(reducer, initialState, storeEnhancers);
+```
+就可以使用redux-immutable-state-invariant和redux devtools了。
+
+Store Enhancer可能有多个，用于将createStore函数产生的store具有更强的功能。
+使用compose将多个storeEnhancers组合在一起。
+使用applyMiddleware将多个中间件组合在一起。
+
+# 5 React 组件的性能优化
+```
+我们应该忘记忽略很小的性能优化，可以说97%的情况下，过早的优化是万恶之源，而我们应该关心对性能影响最关键的那另外3%的代码。
+```
+
+使用shouldComponentUpdate手动比较值得变化绝对是否返回true进行渲染。
+
+react产生的shouldComponentUpdatehe 和react-redux产生的shouldComponentUpdate是不一样的。
+但他们都是浅层比较("shallow compare")。
+当面对props是对象(函数也是对象)的时候，会比较不出来。
+
+```
+//bad
+<Foo style={{color:"red"}}/}>
+
+//good
+const fooStyle = {color:"red"};
+<Foo style={fooStyle}/}>
+```
+也就是尽量少用匿名函数/对象的方式，而是用一个变量代替。
+
+```
+const mapDispatchToProps = (dispatch, ownProps) => {
+  const {id} = ownProps;
+  return {
+    onToggle: () => dispatch(toggleTodo(id)),
+    onRemove: () => dispatch(removeTodo(id))
+  }
+};
+```
+在redux里做掉，至于action是在父组件还是在本组件内都是可以的。
+
+key是为提升比较算法性能，所以key应该保持稳定性，用会变化的数组的index是不对的，尽量保持其稳定，最好是props传递过来的值。如果一定要用数组的index，应该保证数组是不变的或者只是push变化的数组。
+
+除了从渲染角度，还可以从数据获取的角度来优化性能。
+
+reselect：
+只要相关状态没有改变，那就直接用上一次的缓存结果。
+先比较第一层，如果相等就不会继续往下比较。
+同样是浅比较，但是因为我们要求reducer每次返回的是新对象，所以也可以比较到。
+
+```
+const selectVisibleTodos = (todos, filter) => {
+  switch (filter) {
+    case FilterTypes.ALL:
+      return todos;
+    case FilterTypes.COMPLETED:
+      return todos.filter(item => item.completed);
+    case FilterTypes.UNCOMPLETED:
+      return todos.filter(item => !item.completed);
+    default:
+      throw new Error('unsupported filter');
+  }
+}
+
+const mapStateToProps = (state) => {
+  return {
+    todos: selectVisibleTodos(state.todos, state.filter)
+  };
+}
+
+//使用reselect
+const getFilter = (state) => state.filter;
+const getTodos = (state) => state.todos;
+export const selectVisibleTodos = createSelector(
+  [getFilter, getTodos],
+  (filter, todos) => {
+    switch (filter) {
+      case FilterTypes.ALL:
+        return todos;
+      case FilterTypes.COMPLETED:
+        return todos.filter(item => item.completed);
+      case FilterTypes.UNCOMPLETED:
+        return todos.filter(item => !item.completed);
+      default:
+        throw new Error('unsupported filter');
+    }
+  }
+);
+const mapStateToProps = (state) => {
+  return {
+    todos: selectVisibleTodos(state)
+  };
+}
+```
+
+状态书的设计应该尽量范式化(Normalized)，
+所谓范式化就是遵照关系型数据库的设计原则，减少冗余数据。
+用数据库表设计的思路来看就是，范式化是多分表，然后多关联查，少冗余数据。而反范式化就是一表多数据，少关联查。
+因为使用了reselect(等)，推荐范式化
+
+
+# 6 React高阶组件
+
+```
+重复是优秀系统设计的大敌
+```
+
+高阶组件可以类比高阶函数。
+一个高阶组件就是一个函数，这个函数接受一个组件作为输入，然后返回一个新的组件作为结果，新的组件拥有输入组件所不具有的功能。
+react里高阶组件是一个组件类(class)而不是一个组件实例，也可以是一个无状态组件的函数。
+
+一般用代理方式比继承方式多。
+
+使用的思路：
+例如可以用于提取复用的shouldComponentUpdate，减少重复代码。
+mixins的新实现？
+不修改原本组件的代码。
+
+
+## 代理方式
+返回的新组件类直接继承自React.Component类。
+新组件扮演的角色是传入参数组件的一个“代理”，在新组件的render函数中，把被包裹组件渲染出来，除了高阶组件让自己要做的工作，其余功能全都转手给了被包裹的组件。
+如果高阶组件不涉及到除render之外的生命周期函数，也可以是无状态纯函数。
+
+可以实现
+
+- 操纵props
+
+```
+const addNewProps = (WrappedComponent, newProps) => {
+  return class WrappingComponent extends React.Component {
+    render() {
+      return <WrappedComponent {...this.props} {...newProps} />
+    }
+  }
+}
+```
+
+- 访问ref
+
+```
+const refsHOC = (WrappedComponent) => {
+  return class HOCComponent extends React.Component {
+    constructor() {
+      super(...arguments);
+
+      this.linkRef = this.linkRef.bind(this);
+    }
+
+    linkRef(wrappedInstance) {
+      this._root = wrappedInstance;
+    }
+
+    render() {
+      const props = {...this.props, ref: this.linkRef};
+      return <WrappedComponent {...props}/>;
+    }
+  };
+};
+```
+
+
+- 抽取状态
+
+简易版connect
+```
+const doNothing = () => ({});
+
+function connect(mapStateToProps=doNothing, mapDispatchToProps=doNothing) {
+
+  function getDisplayName(WrappedComponent) {
+    return WrappedComponent.displayName ||
+      WrappedComponent.name ||
+      'Component';
+  }
+
+  return function(WrappedComponent) {
+    class HOCComponent extends React.Component {
+      constructor() {
+        super(...arguments);
+
+        this.onChange = this.onChange.bind(this);
+
+        this.store = {};
+      }
+
+      /*
+      //TODO: make a workable shouldComponentUpdate
+      shouldComponentUpdate(nextProps, nextState) {
+        for (const propType in nextProps) {
+          if (nextProps.hasOwnProperty(propType)) {
+            if (nextProps[propType] === this.props[propType]) {
+              return true;
+            }
+          }
+        }
+
+        for (const propType in this.props) {
+          if (this.props.hasOwnProperty(propType)) {
+            if (nextProps[propType] === this.props[propType]) {
+              return true;
+            }
+          }
+        }
+
+        return false;
+      }
+      */
+
+      componentDidMount() {
+        this.context.store.subscribe(this.onChange);
+      }
+
+      componentWillUnmount() {
+        this.context.store.unsubscribe(this.onChange);
+      }
+
+      onChange() {
+        this.setState({});
+      }
+
+      render() {
+        const store = this.context.store;
+        const newProps = {
+          ...this.props,
+          ...mapStateToProps(store.getState(), this.props),
+          ...mapDispatchToProps(store.dispatch, this.props)
+        }
+
+        return <WrappedComponent {...newProps} />;
+      }
+    };
+
+    //借助context的一种provider实现
+    HOCComponent.contextTypes = {
+      store: React.PropTypes.object
+    }
+
+    HOCComponent.displayName = `Connect(${getDisplayName(WrappedComponent)})`;
+
+    return HOCComponent;
+  };
+}
+```
+
+防止高阶组件失去名字不好debug
+```
+  function getDisplayName(WrappedComponent) {
+    return WrappedComponent.displayName ||
+      WrappedComponent.name ||
+      'Component';
+  }
+  HOCComponent.displayName = `Connect(${getDisplayName(WrappedComponent)})`;
+```
+
+- 包装组件
+
+```
+//。。。
+const styleHOC = (WrappedComponent, style) => {
+  return class HOCComponent extends React.Component {
+    render() {
+      return (
+        <div style={style}>
+          <WrappedComponent {...this.props}/>
+        </div>
+      );
+    }
+  };
+};
+```
+
+## 继承方式
+采用继承关系关联作为参数的组件和返回的组件。
+代理方式下是不同的组件,每个组件都经历完整的生命周期.
+继承方式共同使用一个。
+
+
+```
+function removeUserProp(WrappedComponent) {
+  return class NewComponent extends WrappedComponent {
+    render() {
+      //不推荐的用法
+      const {user, ...otherProps} = this.props;
+      this.props = otherProps;
+      return super.render();
+    }
+  };
+}
+
+/*
+function removeUserProp(WrappedComponent) {
+  return class NewComponent extends WrappedComponent {
+    render() {
+      const elements = super.render();
+      const {user, ...otherProps} = this.props;
+
+      console.log('##', elements);
+
+      return React.cloneElement(elements, otherProps, elements.props.children);
+    }
+  };
+}
+*/
+```
+
+- 操纵props
+
+一般不这么用
+一定要用页不推荐上面修改props的方法
+```
+const modifyPropsHOC = (WrappedComponent) => {
+  return class NewComponent extends WrappedComponent {
+    render() {
+      const elements = super.render();
+
+      const newStyle = {
+        color: (elements && elements.type === 'div') ? 'red' : 'green'
+      }
+      const newProps = {...this.props, style: newStyle};
+
+      return React.cloneElement(elements, newProps, elements.props.children);
+    }
+  };
+};
+```
+
+- 操作生命周期
+
+一般这么用
+校验登录
+```
+const onlyForLoggedinHOC = (WrappedComponent) => {
+  return class NewComponent extends WrappedComponent {
+    render() {
+      if (this.props.loggedIn) {
+        return super.render();
+      } else {
+        return null;
+      }
+    }
+  }
+}
+```
+
+重写shouldCompoentUpdate
+useCache???
+```
+const cacheHOC = (WrappedComponent) => {
+  return class NewComponent extends WrappedComponent {
+    shouldComponentUpdate(nextProps, nextState) {
+      return !nextProps.useCache;
+    }
+  }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
 
 
 
