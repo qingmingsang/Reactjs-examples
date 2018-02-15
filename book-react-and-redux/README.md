@@ -6,7 +6,7 @@ npm i create-react-app -g
 create-react-app first_react_app
 npm start
 
-执行eject则会弹出原本的scripts配置，不可逆
+//执行eject则会弹出原本的scripts配置，不可逆
 ```
 
 react的理念
@@ -607,6 +607,109 @@ const cacheHOC = (WrappedComponent) => {
     }
   }
 }
+```
+
+
+## 以函数为子组件
+高阶组件并不是唯一可用于提高React组件代码重用的方法。
+高阶组件的缺点在于对元组件的props有固化的要求。
+
+在‘以函数为子组件’的模式下，他是一个真正的组件，要求必须有子组件，而且子组件必须是一个函数。
+这种模式的缺点在于比较难优化，实际实现中在react-motion中大量使用并没有发现明显的性能问题。如果对性能有硬(强迫症)性需求，可以考虑少使用匿名函数，在shouldComponentUpdate里加入对children的比较。
+
+登录信息可以这样：
+```
+class AddUserProp extends React.Component {
+  render() {
+    const user = loggedinUser;
+    return this.props.children(user)
+  }
+}
+```
+大概是这样用的
+```
+<AddUserProp>
+{(user) => <div>{user}</div>}
+</AddUserProp>
+```
+
+用这种模式实现一个倒计时
+```
+class CountDown extends React.Component {
+
+  constructor() {
+    super(...arguments);
+
+    this.state = {count: this.props.startCount};
+  }
+
+  shouldComponentUpdate(nextProps, nextState) {
+    return nextState.count !== this.state.count;
+  }
+
+  componentDidMount() {
+    this.intervalHandle = setInterval(() => {
+      const newCount = this.state.count - 1;
+      if (newCount >= 0) {
+        this.setState({count: newCount});
+      } else {
+        window.clearInterval(this.intervalHandle);
+        this.intervalHandle = null;
+      }
+    }, 1000);
+  }
+
+  componentWillUnmount() {
+    if (this.intervalHandle) {
+      window.clearInterval(this.intervalHandle);
+      this.intervalHandle = null;
+    }
+  }
+
+  render() {
+    return this.props.children(this.state.count);
+  }
+}
+
+CountDown.propTypes = {
+  children: React.PropTypes.func.isRequired,
+  startCount: React.PropTypes.number.isRequired
+}
+```
+
+大概是这么用的
+```
+<CountDown startCount={10}>
+{
+  (count) => <div>{ count > 0 ? count : '新年快乐'}</div>
+}
+</CountDown>
+```
+
+# 7 Redux和服务器通信
+解决跨域访问api的一个方式是通过代理(proxy)。
+跨域访问api的限制是针对浏览器的行为，服务器对于任何域名下的api访问不受限制。
+可以通过webpack的proxy实现简易的代理功能？
+
+一般在componentDidMount里进行ajax请求。
+```
+ componentDidMount() {
+    const apiUrl = `/data/cityinfo/${cityCode}.html`;
+    fetch(apiUrl).then((response) => {
+      if (response.status !== 200) {
+        throw new Error('Fail to get response with status ' + response.status);
+      }
+
+      response.json()//要先解
+      .then((responseJson) => {
+        this.setState({weather: responseJson.weatherinfo});
+      }).catch((error) => {
+        this.setState({weather: null});
+      });
+    }).catch((error) => {
+      this.setState({weather: null});
+    });
+  }
 ```
 
 
