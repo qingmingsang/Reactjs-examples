@@ -1,7 +1,7 @@
-import React, {PropTypes} from 'react';
-import {connect} from 'react-redux';
+import React, { PropTypes } from 'react';
+import { connect } from 'react-redux';
 
-import {actions as weatherActions} from '../weather/';
+import { actions as weatherActions } from '../weather/';
 
 const CITY_CODES = {
   '北京': 101010100,

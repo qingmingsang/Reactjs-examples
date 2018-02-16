@@ -713,6 +713,83 @@ CountDown.propTypes = {
 ```
 
 
+thunk表示辅助调用另一个子程序的子程序。
+```
+const f = (x) =>{
+  renturn x() + 5;
+}
+
+const g = () =>{
+  renturn 3 + 4;
+}
+
+f(g)//结果是 (3+4)+5 = 12
+```
+
+redux-thunk 的工作是检查对象是不是函数，如果不是函数就放行，完成普通action对象的生命周期，如果发现action对象是函数，就执行这个函数，并把Store的dispatch函数和getState函数作为参数传递到函数中去，处理过程到此为主，不会让这个异步action对象继续往前派发到reducer函数。
+
+```
+export const fetchWeather = (cityCode) => {
+  return (dispatch) => {
+    const apiUrl = `/data/cityinfo/${cityCode}.html`;
+
+    dispatch(fetchWeatherStarted())
+
+    return fetch(apiUrl).then((response) => {
+      if (response.status !== 200) {
+        throw new Error('Fail to get response with status ' + response.status);
+      }
+
+      response.json().then((responseJson) => {
+        dispatch(fetchWeatherSuccess(responseJson.weatherinfo));
+      }).catch((error) => {
+        dispatch(fetchWeatherFailure(error));
+      });
+    }).catch((error) => {
+      dispatch(fetchWeatherFailure(error));
+    })
+  };
+}
+```
+
+取消上一次的ajax请求：
+1. 禁止dom操作
+2. 在过去的xhr中有abort()方法。
+而原生的fetch是没有的，但是一般使用的fetch其实是在xhr基础上封装的，可以在fetch上暴露出abort方法。
+3. 在thunk中加入某种计数变量
+
+```
+export const fetchWeather = (cityCode) => {
+  return (dispatch) => {
+    const apiUrl = `/data/cityinfo/${cityCode}.html`;
+
+    const seqId = ++ nextSeqId;
+
+    const dispatchIfValid = (action) => {
+      if (seqId === nextSeqId) {
+        return dispatch(action);
+      }
+    }
+
+    dispatchIfValid(fetchWeatherStarted())
+
+    fetch(apiUrl).then((response) => {
+      if (response.status !== 200) {
+        throw new Error('Fail to get response with status ' + response.status);
+      }
+
+      response.json().then((responseJson) => {
+        dispatchIfValid(fetchWeatherSuccess(responseJson.weatherinfo));
+      }).catch((error) => {
+        dispatchIfValid(fetchWeatherFailure(error));
+      });
+    }).catch((error) => {
+      dispatchIfValid(fetchWeatherFailure(error));
+    })
+  };
+}
+```
+
 
 
 
