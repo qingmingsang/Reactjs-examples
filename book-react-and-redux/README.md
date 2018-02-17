@@ -728,6 +728,8 @@ f(g)//结果是 (3+4)+5 = 12
 
 redux-thunk 的工作是检查对象是不是函数，如果不是函数就放行，完成普通action对象的生命周期，如果发现action对象是函数，就执行这个函数，并把Store的dispatch函数和getState函数作为参数传递到函数中去，处理过程到此为主，不会让这个异步action对象继续往前派发到reducer函数。
 
+异步action并不是纯函数
+
 ```
 export const fetchWeather = (cityCode) => {
   return (dispatch) => {
@@ -789,6 +791,217 @@ export const fetchWeather = (cityCode) => {
   };
 }
 ```
+
+# 8 单元测试
+如果程序的结构是足够简单的，单元测试并不是必须的。
+
+单元测试框架一般用：
+Mocha + Chai
+或
+Jest
+
+辅助工具一般用：
+Enzyme(测试react组件)
+sinon.js(模拟各种请求，特别是网络)
+redux-mock-store(mock reduxt store)
+
+测试一般的action
+```
+export const addTodo = (text) => ({
+  type: ADD_TODO,
+  completed: false,
+  id: nextTodoId ++,
+  text: text
+});
+
+//test
+describe('todos/actions', () => {
+  describe('addTodo', () => {
+    const addTodo = actions.addTodo
+
+    it('should create an action to add todo', () => {
+      const text = 'first todo';
+      const action = addTodo(text);
+
+      expect(action.text).toBe(text);
+      expect(action.completed).toBe(false);
+      expect(action.type).toBe(actionTypes.ADD_TODO);
+    });
+
+    it('should have different id for different actions', () => {
+      const text = 'first todo';
+      const action1 = addTodo(text);
+      const action2 = addTodo(text);
+
+      expect(action1.id !== action2.id).toBe(true);
+    });
+  });
+});
+```
+
+使用mock store测试异步action
+```
+import thunk from 'redux-thunk';
+import {stub} from 'sinon';
+import configureStore from 'redux-mock-store';
+
+import * as actions from '../../src/weather/actions.js';
+import * as actionTypes from '../../src/weather/actionTypes.js';
+
+const middlewares = [thunk];
+const createMockStore = configureStore(middlewares);
+
+
+describe('weather/actions', () => {
+  describe('fetchWeather', () => {
+    let stubbedFetch;
+    const store = createMockStore();
+
+    beforeEach(() => {
+      stubbedFetch = stub(global, 'fetch');//fake fetch
+    });
+
+    afterEach(() => {
+      stubbedFetch.restore();
+    });
+
+    it('should dispatch fetchWeatherSuccess action type on fetch success', () => {
+      const mockResponse= Promise.resolve({
+        status: 200,
+        json: () => Promise.resolve({
+          weatherinfo: {}
+        })
+      });// fake response
+      stubbedFetch.returns(mockResponse);
+
+      return store.dispatch(actions.fetchWeather(1)).then(() => {
+        const dispatchedActions = store.getActions();//redux-mock-store 的api
+        expect(dispatchedActions.length).toBe(2);
+        expect(dispatchedActions[0].type).toBe(actionTypes.FETCH_STARTED);
+        expect(dispatchedActions[1].type).toBe(actionTypes.FETCH_SUCCESS);
+      });
+    });
+
+  });
+});
+```
+
+测试reducer
+```
+export default (state = {status: Status.LOADING}, action) => {
+  switch(action.type) {
+    case FETCH_STARTED: {
+      return {status: Status.LOADING};
+    }
+    case FETCH_SUCCESS: {
+      return {...state, status: Status.SUCCESS, ...action.result};
+    }
+    case FETCH_FAILURE: {
+      return {status: Status.FAILURE};
+    }
+    default: {
+      return state;
+    }
+  }
+}
+
+//test
+describe('weather/reducer', () => {
+  it('should return loading status', () => {
+    const action = actions.fetchWeatherStarted();
+
+    const newState = reducer({}, action);
+
+    expect(newState.status).toBe(Status.LOADING);
+  });
+});
+```
+
+使用Enzyme的
+shallow方法测试无状态React组件
+```
+const Filters = () => {
+  return (
+    <p className="filters">
+      <Link filter={FilterTypes.ALL}> {FilterTypes.ALL} </Link>
+      <Link filter={FilterTypes.COMPLETED}> {FilterTypes.COMPLETED} </Link>
+      <Link filter={FilterTypes.UNCOMPLETED}> {FilterTypes.UNCOMPLETED} </Link>
+    </p>
+  );
+};
+
+//test
+describe('filters', () => {
+  it('should render three link', () => {
+    const wrapper = shallow(<Filters />);
+
+    expect(wrapper.contains(<Link filter={FilterTypes.ALL}> {FilterTypes.ALL} </Link>)).toBe(true);
+    expect(wrapper.contains(<Link filter={FilterTypes.COMPLETED}> {FilterTypes.COMPLETED} </Link>)).toBe(true);
+    expect(wrapper.contains(<Link filter={FilterTypes.UNCOMPLETED}> {FilterTypes.UNCOMPLETED} </Link>)).toBe(true);
+  });
+});
+```
+
+测试被连接(connnect)的react组件
+```
+const TodoList = ({todos, onClickTodo}) => {
+  return (
+    <ul className="todo-list">
+    {
+      todos.map((item) => (
+        <TodoItem
+          key={item.id}
+          id={item.id}
+          text={item.text}
+          completed={item.completed}
+        />
+        ))
+    }
+    </ul>
+  );
+};
+
+const mapStateToProps = (state) => {
+  return {
+    todos: selectVisibleTodos(state)
+  };
+}
+
+export default connect(mapStateToProps)(TodoList);
+
+//test
+import {mount} from 'enzyme';
+describe('todos', () => {
+  it('should add new todo-item on addTodo action', () => {
+    const store = createStore(
+      combineReducers({
+        todos: todosReducer,
+        filter: filterReducer
+      }), {
+        todos: [],
+        filter: FilterTypes.ALL
+      });//创造的临时Store
+    const subject = (
+      <Provider store={store}>
+        <TodoList />
+      </Provider>
+    );
+    const wrapper = mount(subject);//加入react context
+
+    store.dispatch(actions.addTodo('write more test'));
+
+    expect(wrapper.find('.text').text()).toEqual('write more test');
+  });
+});
+```
+这里的provide需要这样构建是因为TodoItem也是connect到store的组件。
+
+# 9 扩展Redux
+
+
+
+
+
 
 
 

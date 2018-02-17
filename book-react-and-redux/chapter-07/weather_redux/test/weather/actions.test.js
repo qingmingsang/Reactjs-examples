@@ -1,5 +1,5 @@
 import thunk from 'redux-thunk';
-import {stub} from 'sinon';
+import { stub } from 'sinon';
 import configureStore from 'redux-mock-store';
 
 import * as actions from '../../src/weather/actions.js';
@@ -23,7 +23,7 @@ describe('weather/actions', () => {
     });
 
     it('should dispatch fetchWeatherSuccess action type on fetch success', () => {
-      const mockResponse= Promise.resolve({
+      const mockResponse = Promise.resolve({
         status: 200,
         json: () => Promise.resolve({
           weatherinfo: {}
