@@ -998,6 +998,211 @@ describe('todos', () => {
 
 # 9 扩展Redux
 
+如果用express中间件类比redux的中间件，那么
+如果把redux和express都看作一个对请求的处理框架，
+redux中的action对象对应与express中的客户端请求，
+所有的中间件就组成处理请求的'管道'。
+
+在redux中，中间件处理的是action对象，而派发action对象的就是store上的dispatch函数，在action对象进入reducer之前，会经历中间件的管道。
+
+一个空的中间件
+```
+function doNothingMiddleware({dispatch,getState}){
+  return function(next){
+    return function(action){
+      return next(action);//下一个中间件继续处理
+    }
+  }
+}
+
+//也可以这么写
+let doNothingMiddleware = ({dispatch,getState}) => next => action => next(action)
+```
+
+redux-thunk源码
+```
+function createThunkMiddleware(extraArgument){
+  return ({dispatch,getState}) => next =>action=>{
+    if(typeof action === 'function'){
+      return action(dispatch,getState,extraArgument);
+    }
+    return next(action);
+  }
+}
+const thunk = createThunkMiddleware();
+export default thunk;
+```
+
+单个Enhancer
+```
+const configureStore = applyMiddleware(thunkMiddleware)(createStore);
+const store = configureStore(reducer,initialState);
+```
+
+有多个Enhancer的情况
+```
+const middlewares = [thunkMiddleware];
+
+const storeEnhancers = compose(
+  applyMiddleware(...middlewares),
+  (win && win.devToolsExtension) ? win.devToolsExtension() : (f) => f,
+);
+
+export default createStore(reducer, {}, storeEnhancers);
+```
+
+
+替换thunk，利用promise处理异步action
+一个简易的promise中间件
+```
+function isPromise(obj) {
+  return obj && typeof obj.then === 'function';
+}
+
+/*
+export default function promiseMiddleware({dispatch}) {
+  return next => action => {
+    return isPromise(action) ? action.then(dispatch) : next(action);
+  }
+}
+*/
+
+export default function promiseMiddleware({dispatch}) {
+  return function(next) {
+    return function(action) {
+      return isPromise(action) ? action.then(dispatch) : next(action);
+    }
+  }
+}
+```
+
+
+改进的promise中间件
+```
+function isPromise(obj) {
+  return obj && typeof obj.then === 'function';
+}
+
+export default function promiseMiddleware({dispatch}) {
+  return (next) => (action) => {
+    const {types, promise, ...rest} = action;
+    if (!isPromise(promise) || !(action.types && action.types.length === 3)) {
+      return next(action);
+    }
+
+    const [PENDING, DONE, FAIL] = types;
+
+    dispatch({...rest, type: PENDING});
+    return action.promise.then(
+      (result) => dispatch({...rest, result, type: DONE}),
+      (error) => dispatch({...rest, error, type: FAIL})
+    );
+  };
+}
+```
+
+promise中间件用的话就这样用,可以省去几个样板action
+```
+export const fetchWeather = (cityCode) => {
+  const apiUrl = `/data/cityinfo/${cityCode}.html`;
+
+  return {
+    promise: fetch(apiUrl).then(response => {
+      if (response.status !== 200) {
+        throw new Error('Fail to get response with status ' + response.status);
+      }
+
+      return response.json().then(responseJson => responseJson.weatherinfo);
+    }),
+    types: [FETCH_STARTED, FETCH_SUCCESS, FETCH_FAILURE]
+  };
+}
+```
+
+applyMiddleware函数可以接受任意个参数的中间件，每个通过dispatch函数派发的动作组件按照在applyMiddleware中的先后顺序传递给各个中间件。
+
+一个中间件如果产生新的action对象，正确的方式是使用dispatch函数派发，而不是使用next函数。
+
+中间件可以用来增强Redux Store的dispatch方法。
+Store Enhancer可以用来增强Redux Store。
+
+
+一个空的Store Enhancer
+```
+const doNothingEnhancer = (createStore) =>(reducer,preloadedState,enhancer)=>{
+  const store = createStore(reducer,preloadedState,enhancer);
+  return store;
+}
+```
+
+一个store对象包含：
+- dispatch
+- subscribe
+- getState
+- replaceReducer
+
+
+对dispatch调用的日志
+```
+const logEnhancer = (createStore) =>(reducer,preloadedState,enhancer)=>{
+  const store = createStore(reducer,preloadedState,enhancer);
+
+  const originalDispatch = store.dispatch;
+  store.dispatch = (action) =>{
+    console.log('dispatch action:',action);
+    originalDispatch(action);
+  }
+
+  return store;
+}
+```
+
+不清除过去store新界面创建该页面(临时？)store的enhancer
+```
+const RESET_ACTION_TYPE = '@@RESET';
+
+const resetReducerCreator = (reducer, resetState) => (state, action) => {
+  if (action.type === RESET_ACTION_TYPE) {
+    return resetState;
+  } else {
+    return reducer(state, action);
+  }
+};
+
+const reset = (createStore) => (reducer, preloadedState, enhancer) => {
+  const store = createStore(reducer, preloadedState, enhancer);
+
+  const reset = (resetReducer, resetState) => {
+    const newReducer = resetReducerCreator(resetReducer, resetState);
+    store.replaceReducer(newReducer);
+    store.dispatch({type: RESET_ACTION_TYPE, state: resetState});
+  };
+
+  return {
+    ...store,
+    reset
+  };
+};
+
+export default reset;
+
+//大概是这么用的
+  it('reset', () => {
+    it('should reset state and reducer', () => {
+      const newReducer = (state, action) =>({newPayload: action.payload});
+      const newState = {newPayload: 'new'};
+
+      store.reset(newReducer, newState);
+      expect(store.getState()).toEqual(newState);
+
+      store.dispatch({type: 'any', payload: 'changed'});
+      expect(store.getState()).toEqual({newPayload: 'changed'});
+    });
+  });
+```
+
+# 10 动画
+
 
 
 
