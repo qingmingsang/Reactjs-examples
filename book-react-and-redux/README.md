@@ -1202,6 +1202,43 @@ export default reset;
 ```
 
 # 10 动画
+css3方式的缺点是时间和速度曲线不合理，过程可能是一闪而逝的，捕捉不到中间状态。优点是性能好。
+js方式的缺点是性能差，优点是灵活度高。
+
+60帧 = 60fps(Frame Per Second)
+1000ms/60 = 16ms
+
+模拟requestAnimationFrame实现
+```
+var lastTimeStamp = new Date().getTime();
+function raf(fn) {
+  var currTimeStamp = new Date().getTime();
+  var delay  = Math.max(0, 16 - (currTimeStamp - lastTimeStamp));
+  var handle = setTimeout(function(){
+    fn(currTimeStamp);
+  }, delay);
+  lastTimeStamp = currTimeStamp;
+  return handle;
+}
+
+var left = 0;
+var animatedElement = document.getElementById("sample");
+var startTimestamp = new Date().getTime();
+function render(timestamp) {
+  left += (timestamp - startTimestamp) / 16;
+  animatedElement.style.left = left + 'px';
+  if (left < 400) {
+    raf(render);
+  }
+}
+
+raf(render);
+```
+
+ReactCssTransitionGroup是通过css实现的。
+一般用在组件的装载和卸载动画中。
+
+
 
 
 
