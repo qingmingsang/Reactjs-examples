@@ -1235,8 +1235,51 @@ function render(timestamp) {
 raf(render);
 ```
 
+## ReactCssTransitionGroup
 ReactCssTransitionGroup是通过css实现的。
 一般用在组件的装载和卸载动画中。
+
+transitionName,
+enter代表‘装载’开始时的状态，
+leave代表‘卸载’开始时的状态，
+active代表动画结束时的状态。
+
+假设transitionName为sanmple，那么相关类名就是：
+sample-enter
+sample-enter-active
+sample-leave
+sample-leave-active
+sample-appear
+sample-appear-active
+
+transitionEnterTimeout‘装载’动画持续时间,
+transitionLeaveTImeout‘卸载’动画持续时间,
+transitionAppearTImeout初次‘装载’动画持续时间,
+他们的持续时间应该与css里的transition-duration保持一致,
+这种重复设置是ReactCssTransitionGroup的一个缺点。
+
+只有在该组件已经加载(真实渲染？)了，该ReactCssTransitionGroup动画才有效。
+在初次加载时如果也需要动画可以手动将`transitionAppear={true}`，大多数情况下是不需要的。
+
+## React-Motion
+`友好的API比性能更重要`
+
+React-Motion是通过js的方式来控制动画的。
+相比ReactCssTransitionGroup不需要css，ReactCssTransitionGroup包裹子元素集合，React-Motion包裹return的根节点，用的是‘以函数为子组件’的模式。
+willEnter对应装载，willLeave对应卸载，defaultStyles对应appear。
+
+# 11 多页面应用
+
+
+
+
+
+
+
+
+
+
+
 
 
 
