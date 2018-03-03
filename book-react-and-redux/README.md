@@ -1270,15 +1270,140 @@ willEnter对应装载，willLeave对应卸载，defaultStyles对应appear。
 
 # 11 多页面应用
 
+## 路由
+[React-Router](https://github.com/ReactTraining/react-router)按照Route在代码中的先后顺序决定匹配的顺序。
+(这本书用的是3.x)
 
 
+当react-router和react-redux同存时
+```
+const createElement = (Component, props) => {
+  return (
+    <Provider store={store}>
+      <Component {...props} />
+    </Provider>
+  );
+};
+```
 
+```
+//App
+const App = ({children}) => {
+  return (
+    <div>
+      <TopMenu />
+      <div>{children}</div>
+    </div>
+  );
+};
 
+//Routes
+const Routes = () => (
+  <Router history={history} createElement={createElement}>
+    <Route path="/" component={App}>
+      <IndexRoute component={Home} />
+      <Route path="home" component={Home} />
+      <Route path="about" component={About} />
+      <Route path="*" component={NotFound} />
+    </Route>
+  </Router>
+);
+```
+IndexRoute是默认路由。
 
+这里createElement每次都会调用，如果觉得有性能问题，也在Routes里去掉createElement然后这样用。
+```
+ReactDOM.render(
+  <Routes />,
+  document.getElementById('root')
+);
 
+//改为
+ReactDOM.render(
+  <Provider store={store} >
+    <Routes />,
+  </Provider>
+  document.getElementById('root')
+);
+```
 
+如果希望将url的变化也统一到redux里，需要加入react-router-redux，
+但是他的使用实际上是违背唯一数据源的。
+```
+//routes
+import {Router, Route, IndexRoute, browserHistory} from 'react-router';
+import {syncHistoryWithStore} from 'react-router-redux';
 
+const history = syncHistoryWithStore(browserHistory, store);
 
+//store
+import {routerReducer} from 'react-router-redux';
+
+const reducer = combineReducers({
+  routing: routerReducer
+});
+```
+现在当url变化时，会向store派发action。
+
+## 代码分片
+
+@1
+
+利用[webpack](https://github.com/webpack/webpack)。
+
+使用CommonsChunkPlugin，配置output的chunkFilename用于分片各页面组件间的公共组件。
+```
+chunkFilename: 'dist/js/[name].[chunkhash:8].chunk.js'
+
+new webpack.optimize.CommonsChunkPlugin('common', 'dist/js/common.[chunkhash:8].js')
+```
+开发环境可以不用[chunkhash]。
+
+使用require.ensure和react-router的getComponent异步加载组件。也可以尝试使用新的import()，写法略有差异。
+```
+const getHomePage = (nextState, callback) => {
+  require.ensure([], function(require) {
+    callback(null, require('./pages/Home.js').default);
+  }, 'home');
+};
+
+//routes
+const Routes = () => (
+  <Router history={history} createElement={createElement}>
+    <Route path="/" component={App}>
+      <IndexRoute getComponent={getHomePage} />
+      <Route path="home" getComponent={getHomePage} />
+      <Route path="counter" getComponent={getCounterPage} />
+      <Route path="about" getComponent={getAboutPage} />
+      <Route path="*" getComponent={getNotFoundPage} />
+    </Route>
+  </Router>
+);
+```
+需要注意的是因为webpack打包过程是对代码静态扫描的过程，所以这里不能对getHomePage这种样板代码进行方法提取。
+require里参数不能是变量。
+
+因为代码分片后，redux的reducer和state有中断，所以需要一个store enhancer来弥补这个问题，替换当前store上的state和reducer。
+
+```
+const getCounterPage = (nextState, callback) => {
+  require.ensure([], function(require) {
+    const {page, reducer, stateKey, initialState} = require('./pages/CounterPage.js');
+
+    const state = store.getState();
+    store.reset(combineReducers({
+      ...store._reducers,
+      counter: reducer//将新的recuer合入
+    }), {
+      ...state,
+      [stateKey]: initialState //state的处理
+    });
+
+    callback(null, page);
+  }, 'counter');
+};
+```
+这章整体讲的略为粗略，也可能是涉及的东西比较复杂。如果想更好的掌握需要自己去扩展更多的知识。
 
 
 
