@@ -24,7 +24,7 @@ app.use(express.static(path.resolve(__dirname, '../build')));
 app.use(webpackDevMiddleware);
 app.use(require('webpack-hot-middleware')(compiler, {
   log: console.log,
-  path: '/__webpack_hmr',
+  //path: '/__webpack_hmr',
   heartbeat: 10 * 1000
 }));
 

@@ -1406,6 +1406,49 @@ const getCounterPage = (nextState, callback) => {
 这章整体讲的略为粗略，也可能是涉及的东西比较复杂。如果想更好的掌握需要自己去扩展更多的知识。
 
 
+# 12 同构(isomorphic)
+## 服务器端渲染 vs 浏览器端渲染
+一般一个浏览器(前端)渲染需要3个部分：
+1. 应用架构，如backbone，react。
+2. 模板库。
+3. 服务端的api支持。
+
+前端渲染的主要问题在于首屏渲染。
+
+TTFP(Time To First Paint):从网页HTTP请求发出，到用户可以看到第一个有意义的内容渲染出来的时间差。
+TTI(Time To Interactive):从网页HTTP请求发出，到用户可以对网页内容进行交互的时间。
+
+前端渲染没有任何缓存(首屏渲染)的情况下，需要等待3个HTTP请求
+1. 向服务器获取HTML
+2. 获取js文件
+3. 访问api服务获取数据
+
+PWA(Progressive Web App)利用Manifest和Service Worker可以进一步优化,该书没有讲述，可以另外进行探索。
+
+服务端渲染的优点：
+1. 在html请求时就可以返回有内容的html，所以首次渲染TTFP相比前端渲染会短一些。
+2. 更利于搜索引擎(SEO)优化.
+3. 大多数情况下服务器上(api)获取数据的速度更快。
+
+服务端渲染的缺点：
+1. 可能会产生过大的html，导致首屏一样不快
+2. 服务器压力更大
+3. 主流的react，vue框架对服务端渲染支持并不太好
+
+## 构建渲染动态内容服务器
+react的热加载除了webpack-dev-middleware和webpack-hot-middleware，还需要一个babel装载器react-hot-loader。
+
+同构的简单思路就是，原本前端渲染是始终返回html挂载文件本身，现在是server始终render模板文件，但同时又加载前端运行的文件。
+
+
+
+
+
+
+
+
+
+
 
 
 
