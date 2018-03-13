@@ -610,7 +610,7 @@ const cacheHOC = (WrappedComponent) => {
 ```
 
 
-## 以函数为子组件
+## 以函数为子组件 (现在叫做 [render props](https://zhuanlan.zhihu.com/p/34382261))
 高阶组件并不是唯一可用于提高React组件代码重用的方法。
 高阶组件的缺点在于对元组件的props有固化的要求。
 
@@ -1441,8 +1441,55 @@ react的热加载除了webpack-dev-middleware和webpack-hot-middleware，还需�
 同构的简单思路就是，原本前端渲染是始终返回html挂载文件本身，现在是server始终render模板文件，但同时又加载前端运行的文件。
 
 
+## react 同构
+react的render在客户端时，最终产出的是dom元素。
+而在服务器端，最终产出的是字符串，
+因为返回给浏览器的就是html字符串，所以服务端渲染不需要指定容器元素。
 
+renderToString函数返回结果就是一个html字符串。
 
+为了避免不必要的dom操作，服务端渲染react组件时会计算所生成html的校验和，并存放在根节点的属性 data-react-checksum中。
+只有检验不过时，前端渲染才会覆盖掉服务端渲染产生的html。
+
+所以实现同构很重要的一条，就是一定要保证前后端渲染的结果一致。
+
+### 脱水(Dehydrate)和注水(Rehydrate)
+服务端渲染产生了html，但是在交给浏览器的网页中不光要有html，还需要有“脱水数据”，也就是在服务器渲染过程中给react组件的输入数据，这样，当浏览器端渲染时，可以直接根据“脱水数据”来渲染react组件，这个过程叫做“注水”。
+使用脱水数据可以避免没必要的api请求，保证了两端渲染的结果一致，这样不会产生网页内容的闪动。
+
+使用脱水数据需要注意防止跨站脚本攻击(XSS)。
+
+脱水数据一般来自redux 的store。
+
+脱水数据不能过大，如果过大就会影响性能，让服务端渲染失去意义。
+
+在服务器端使用redux必须对每个请求都创造一个新的store，这是和浏览器渲染的最大区别。
+
+有时候需要在前端和后端中都请求某一个接口。
+
+后端渲染不存在所谓分片(懒加载)，全都是直接导入。
+
+可能需要额外的特殊处理字符串的方法，防止脱水数据中的不安全字符。
+```
+function safeJSONstringify(obj) {
+  return JSON.stringify(obj).replace(/<\/script/g, '<\\/script').replace(/<!--/g, '<\\!--');
+}
+```
+
+前后端渲染都需要用react-router的match函数了现在。
+
+# react的同构与vue的同构
+都有一个服务端渲染的方法
+vue是vue-server-renderer提供的，
+react是react-dom/server提供的。
+
+vue需要客户端和服务端各打一次包，react只需要一次。
+vue还需要在webpack里加入'vue-server-renderer/client-plugin'和'vue-server-renderer/server-plugin',而react只需要'webpack-manifest-plugin'.
+这里很大可能是vue的该插件做了其他整合和优化。
+
+react对redux的处理比较复杂，特别是对懒加载和ssr，而vue也应该是整合过了比较简单。
+
+整体而言两者各有异同，可能vue本身并没有比react更适合ssr，但是奈何有个尤雨溪做掉了很多脏活。。。。
 
 
 
